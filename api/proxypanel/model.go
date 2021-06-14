@@ -1,4 +1,4 @@
-package proxypan
+package proxypanel
 
 import "encoding/json"
 
@@ -7,6 +7,65 @@ type Response struct {
 	Code    int             `json:"code"`
 	Data    json.RawMessage `json:"data"`
 	Message string          `json:"message"`
+}
+type V2rayNodeInfo struct {
+	ID            int    `json:"id"`
+	IsUDP         bool   `json:"is_udp"`
+	SpeedLimit    uint64 `json:"speed_limit"`
+	ClientLimit   int    `json:"client_limit"`
+	PushPort      int    `json:"push_port"`
+	Secret        string `json:"secret"`
+	Key           string `json:"key"`
+	Cert          string `json:"pem"`
+	V2License     string `json:"v2_license"`
+	V2AlterID     int    `json:"v2_alter_id"`
+	V2Port        int    `json:"v2_port"`
+	V2Method      string `json:"v2_method"`
+	V2Net         string `json:"v2_net"`
+	V2Type        string `json:"v2_type"`
+	V2Host        string `json:"v2_host"`
+	V2Path        string `json:"v2_path"`
+	V2TLS         bool   `json:"v2_tls"`
+	V2Cdn         bool   `json:"v2_cdn"`
+	V2TLSProvider string `json:"v2_tls_provider"`
+	RedirectUrl   string `json:"redirect_url"`
+}
+
+type TrojanNodeInfo struct {
+	ID          int    `json:"id"`
+	IsUDP       bool   `json:"is_udp"`
+	SpeedLimit  uint64 `json:"speed_limit"`
+	ClientLimit int    `json:"client_limit"`
+	PushPort    int    `json:"push_port"`
+	TorjanPort  int    `json:"trojan_port"`
+	Secret      string `json:"secret"`
+	License     string `json:"license"`
+}
+
+// "id": 2,
+// "method": "aes-256-cfb",
+// "protocol": "origin",
+// "obfs": "plain",
+// "obfs_param": "",
+// "is_udp": 1,
+// "speed_limit": 6555555,
+// "client_limit": 1,
+// "single": 0,
+// "port": "", // 只在单端口模式使用
+// "passwd": "", // 只在单端口模式使用
+// "push_port": 8081
+type SSRNodeInfo struct {
+	ID          int    `json:"id"`
+	Method      string `json:"method"`
+	Obfs        string `json:"obfs"`
+	ObfsParam   string `json:"obfs_param"`
+	IsUDP       bool   `json:"is_udp"`
+	SpeedLimit  uint64 `json:"speed_limit"`
+	ClientLimit int    `json:"client_limit"`
+	Single      int    `json:"single"`
+	Port        int    `json:"port"`
+	Passwd      string `json:"passwd"`
+	PushPort    int    `json:"push_port"`
 }
 
 // Node status report  节点心跳信息
