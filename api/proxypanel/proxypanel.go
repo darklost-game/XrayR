@@ -198,49 +198,30 @@ func (c *APIClient) ParseV2rayNodeResponse(data json.RawMessage) (*api.NodeInfo,
 
 // ParseSSNodeResponse parse the response for the given nodeinfor format
 func (c *APIClient) ParseSSNodeResponse(data json.RawMessage) (*api.NodeInfo, error) {
-	var port int = 0
+
 	var speedlimit uint64 = 0
-	var method string
-	path := "/mod_mu/users"
-	res, err := c.client.R().
-		SetQueryParam("node_id", strconv.Itoa(c.NodeID)).
-		SetResult(&Response{}).
-		ForceContentType("application/json").
-		Get(path)
 
-	response, err := c.parseResponse(res, path, err)
-
-	userListResponse := new([]UserResponse)
-
-	if err := json.Unmarshal(response.Data, userListResponse); err != nil {
-		return nil, fmt.Errorf("Unmarshal %s failed: %s", reflect.TypeOf(userListResponse), err)
+	ssrNodeInfo := new(SSRNodeInfo)
+	err := json.Unmarshal(data, &ssrNodeInfo)
+	if err != nil {
+		return nil, fmt.Errorf("json unmarshal failed %s ", err.Error())
 	}
-	// Find the multi-user
-	for _, u := range *userListResponse {
-		if u.MultiUser > 0 {
-			port = u.Port
-			method = u.Method
-			break
-		}
-	}
-
-	if port == 0 || method == "" {
-		return nil, fmt.Errorf("Cant find the single port multi user")
-	}
-
 	if c.SpeedLimit > 0 {
 		speedlimit = uint64((c.SpeedLimit * 1000000) / 8)
 	} else {
-		speedlimit = uint64((nodeInfoResponse.SpeedLimit * 1000000) / 8)
+		speedlimit = uint64(ssrNodeInfo.SpeedLimit)
 	}
+
+	c.DeviceLimit = ssrNodeInfo.ClientLimit
+
 	// Create GeneralNodeInfo
 	nodeinfo := &api.NodeInfo{
 		NodeType:          c.NodeType,
 		NodeID:            c.NodeID,
-		Port:              port,
+		Port:              ssrNodeInfo.Port,
 		SpeedLimit:        speedlimit,
 		TransportProtocol: "tcp",
-		CypherMethod:      method,
+		CypherMethod:      ssrNodeInfo.Method,
 	}
 
 	return nodeinfo, nil
@@ -249,7 +230,7 @@ func (c *APIClient) ParseSSNodeResponse(data json.RawMessage) (*api.NodeInfo, er
 // ParseTrojanNodeResponse parse the response for the given nodeinfor format
 func (c *APIClient) ParseTrojanNodeResponse(data json.RawMessage) (*api.NodeInfo, error) {
 
-	var TLSType, host string
+	var TLSType string
 	var speedlimit uint64 = 0
 
 	trojanNodeInfo := new(TrojanNodeInfo)
@@ -280,7 +261,6 @@ func (c *APIClient) ParseTrojanNodeResponse(data json.RawMessage) (*api.NodeInfo
 		TransportProtocol: "tcp",
 		EnableTLS:         true,
 		TLSType:           TLSType,
-		Host:              host,
 	}
 
 	return nodeinfo, nil
@@ -325,23 +305,24 @@ func (c *APIClient) GetNodeInfo() (nodeInfo *api.NodeInfo, err error) {
 
 // GetUserList will pull user form sspanel
 func (c *APIClient) GetUserList() (UserList *[]api.UserInfo, err error) {
-	path := "/mod_mu/users"
-	res, err := c.client.R().
-		SetQueryParam("node_id", strconv.Itoa(c.NodeID)).
-		SetResult(&Response{}).
-		ForceContentType("application/json").
-		Get(path)
-
-	response, err := c.parseResponse(res, path, err)
-
-	userListResponse := new([]UserResponse)
-
-	if err := json.Unmarshal(response.Data, userListResponse); err != nil {
-		return nil, fmt.Errorf("Unmarshal %s failed: %s", reflect.TypeOf(userListResponse), err)
-	}
-	userList, err := c.ParseUserListResponse(userListResponse)
+	path := fmt.Sprintf("userList/%d", c.NodeID)
+	apipath, err := c.apiPath(path)
 	if err != nil {
-		res, _ := json.Marshal(userListResponse)
+		return nil, err
+	}
+	res, err := c.
+		createCommonRequest().
+		SetResult(&Response{}).
+		Get(apipath)
+
+	response, err := c.parseResponse(res, apipath, err)
+	if err != nil {
+		return nil, err
+	}
+
+	userList, err := c.ParseUserListResponse(response.Data)
+	if err != nil {
+		res, _ := json.Marshal(response)
 		return nil, fmt.Errorf("Parse user list failed: %s", string(res))
 	}
 	return userList, nil

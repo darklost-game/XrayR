@@ -67,6 +67,36 @@ type SSRNodeInfo struct {
 	Passwd      string `json:"passwd"`
 	PushPort    int    `json:"push_port"`
 }
+type V2rayUser struct {
+	UID        int    `json:"uid"`
+	VmessUID   string `json:"vmess_uid"`
+	SpeedLimit uint64 `json:"speed_limit"`
+}
+type TrojanUser struct {
+	UID        int    `json:"uid"`
+	Password   string `json:"password"`
+	SpeedLimit uint64 `json:"speed_limit"`
+}
+
+// "uid": 1,
+// "port": 10000,
+// "passwd": "@123",
+// "method": "aes-256-cfb",
+// "protocol": "origin",
+// "obfs": "plain",
+// "obfs_param": "",
+// "speed_limit": 134217728,
+// "enable": 1
+type SSRUser struct {
+	UID        int    `json:"uid"`
+	Port       int    `json:"port"`
+	Password   string `json:"password"`
+	Method     string `json:"method"`
+	Protocol   string `json:"protocol"`
+	Obfs       string `json:"obfs"`
+	ObfsParam  string `json:"obfs_param"`
+	SpeedLimit uint64 `json:"speed_limit"`
+}
 
 // Node status report  节点心跳信息
 type NodeStatus struct {
