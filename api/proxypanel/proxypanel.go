@@ -303,6 +303,132 @@ func (c *APIClient) GetNodeInfo() (nodeInfo *api.NodeInfo, err error) {
 	return nodeInfo, nil
 }
 
+// ParseV2rayNodeResponse parse the response for the given nodeinfor format
+func (c *APIClient) ParseV2rayUserListResponse(data json.RawMessage) (*[]api.UserInfo, error) {
+
+	var deviceLimit int = 0
+	var speedlimit uint64 = 0
+	v2rayUserList := make([]*V2rayUser, 0)
+	if err := json.Unmarshal(data, &v2rayUserList); err != nil {
+		return nil, fmt.Errorf("json unmarshal failed %s ", err.Error())
+	}
+
+	userList := make([]api.UserInfo, len(v2rayUserList))
+	for i, user := range v2rayUserList {
+		if c.DeviceLimit > 0 {
+			deviceLimit = c.DeviceLimit
+		} else {
+			// deviceLimit = user.DeviceLimit
+		}
+		if c.SpeedLimit > 0 {
+			speedlimit = uint64((c.SpeedLimit * 1000000) / 8)
+		} else {
+			speedlimit = uint64((user.SpeedLimit * 1000000) / 8)
+		}
+		userList[i] = api.UserInfo{
+			UID:   user.UID,
+			Email: user.VmessUID,
+			UUID:  user.VmessUID,
+			// Passwd:      user.Passwd,
+			SpeedLimit:  speedlimit,
+			DeviceLimit: deviceLimit,
+			// Port:          user.Port,
+			// Method:        user.Method,
+			// Protocol:      user.Protocol,
+			// ProtocolParam: user.ProtocolParam,
+			// Obfs:          user.Obfs,
+			// ObfsParam:     user.ObfsParam,
+			// AlterID:		  user.AlterID,
+		}
+	}
+
+	return &userList, nil
+}
+
+// ParseV2rayNodeResponse parse the response for the given nodeinfor format
+func (c *APIClient) ParseTrojanUserListResponse(data json.RawMessage) (*[]api.UserInfo, error) {
+
+	var deviceLimit int = 0
+	var speedlimit uint64 = 0
+	trojanUserList := make([]*TrojanUser, 0)
+	if err := json.Unmarshal(data, &trojanUserList); err != nil {
+		return nil, fmt.Errorf("json unmarshal failed %s ", err.Error())
+	}
+
+	userList := make([]api.UserInfo, len(trojanUserList))
+	for i, user := range trojanUserList {
+		if c.DeviceLimit > 0 {
+			deviceLimit = c.DeviceLimit
+		} else {
+			// deviceLimit = user.DeviceLimit
+		}
+		if c.SpeedLimit > 0 {
+			speedlimit = uint64((c.SpeedLimit * 1000000) / 8)
+		} else {
+			speedlimit = uint64((user.SpeedLimit * 1000000) / 8)
+		}
+		userList[i] = api.UserInfo{
+			UID:   user.UID,
+			Email: user.Password,
+			UUID:  user.Password,
+			// Passwd:      user.Passwd,
+			SpeedLimit:  speedlimit,
+			DeviceLimit: deviceLimit,
+			// Port:          user.Port,
+			// Method:        user.Method,
+			// Protocol:      user.Protocol,
+			// ProtocolParam: user.ProtocolParam,
+			// Obfs:          user.Obfs,
+			// ObfsParam:     user.ObfsParam,
+			// AlterID:		  user.AlterID,
+		}
+	}
+
+	return &userList, nil
+}
+
+// ParseV2rayNodeResponse parse the response for the given nodeinfor format
+func (c *APIClient) ParseSSUserListResponse(data json.RawMessage) (*[]api.UserInfo, error) {
+
+	var deviceLimit int = 0
+	var speedlimit uint64 = 0
+	ssrUserList := make([]*SSRUser, 0)
+	if err := json.Unmarshal(data, &ssrUserList); err != nil {
+		return nil, fmt.Errorf("json unmarshal failed %s ", err.Error())
+	}
+
+	userList := make([]api.UserInfo, len(ssrUserList))
+	for i, user := range ssrUserList {
+		if c.DeviceLimit > 0 {
+			deviceLimit = c.DeviceLimit
+		} else {
+			// deviceLimit = user.DeviceLimit
+		}
+		if c.SpeedLimit > 0 {
+			speedlimit = uint64((c.SpeedLimit * 1000000) / 8)
+		} else {
+			speedlimit = uint64((user.SpeedLimit * 1000000) / 8)
+		}
+		userList[i] = api.UserInfo{
+			UID:   user.UID,
+			Email: user.Password,
+			// UUID:  user.VmessUID,
+			Passwd:      user.Password,
+			SpeedLimit:  speedlimit,
+			DeviceLimit: deviceLimit,
+			Port:        user.Port,
+			Method:      user.Method,
+			Protocol:    user.Protocol,
+			// ProtocolParam: user.ProtocolParam,
+			Obfs:      user.Obfs,
+			ObfsParam: user.ObfsParam,
+			// AlterID:		  user.AlterID,
+		}
+	}
+
+	return &userList, nil
+}
+
 // GetUserList will pull user form sspanel
 func (c *APIClient) GetUserList() (UserList *[]api.UserInfo, err error) {
 	path := fmt.Sprintf("userList/%d", c.NodeID)
@@ -320,8 +446,18 @@ func (c *APIClient) GetUserList() (UserList *[]api.UserInfo, err error) {
 	if err != nil {
 		return nil, err
 	}
+	var userList *[]api.UserInfo
+	switch c.NodeType {
+	case "V2ray":
+		userList, err = c.ParseV2rayUserListResponse(response.Data)
+	case "Trojan":
+		userList, err = c.ParseTrojanUserListResponse(response.Data)
+	case "Shadowsocks":
+		userList, err = c.ParseSSUserListResponse(response.Data)
+	default:
+		return nil, fmt.Errorf("Unsupported Node type: %s", c.NodeType)
+	}
 
-	userList, err := c.ParseUserListResponse(response.Data)
 	if err != nil {
 		res, _ := json.Marshal(response)
 		return nil, fmt.Errorf("Parse user list failed: %s", string(res))
@@ -449,39 +585,4 @@ func (c *APIClient) ReportIllegal(detectResultList *[]api.DetectResult) error {
 		return err
 	}
 	return nil
-}
-
-// ParseUserListResponse parse the response for the given nodeinfo format
-func (c *APIClient) ParseUserListResponse(userInfoResponse *[]UserResponse) (*[]api.UserInfo, error) {
-	var deviceLimit int = 0
-	var speedlimit uint64 = 0
-	userList := make([]api.UserInfo, len(*userInfoResponse))
-	for i, user := range *userInfoResponse {
-		if c.DeviceLimit > 0 {
-			deviceLimit = c.DeviceLimit
-		} else {
-			deviceLimit = user.DeviceLimit
-		}
-		if c.SpeedLimit > 0 {
-			speedlimit = uint64((c.SpeedLimit * 1000000) / 8)
-		} else {
-			speedlimit = uint64((user.SpeedLimit * 1000000) / 8)
-		}
-		userList[i] = api.UserInfo{
-			UID:           user.ID,
-			Email:         user.Email,
-			UUID:          user.UUID,
-			Passwd:        user.Passwd,
-			SpeedLimit:    speedlimit,
-			DeviceLimit:   deviceLimit,
-			Port:          user.Port,
-			Method:        user.Method,
-			Protocol:      user.Protocol,
-			ProtocolParam: user.ProtocolParam,
-			Obfs:          user.Obfs,
-			ObfsParam:     user.ObfsParam,
-		}
-	}
-
-	return &userList, nil
 }
