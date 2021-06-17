@@ -313,6 +313,7 @@ func (c *APIClient) GetUserList() (UserList *[]api.UserInfo, err error) {
 	res, err := c.
 		createCommonRequest().
 		SetResult(&Response{}).
+		SetQueryParam("updateTime", string(time.Now().Unix())).
 		Get(apipath)
 
 	response, err := c.parseResponse(res, apipath, err)
