@@ -482,8 +482,6 @@ func (c *APIClient) ReportNodeStatus(nodeStatus *api.NodeStatus) (err error) {
 	}
 	res, err := c.
 		createCommonRequest().
-		SetHeader("Content-Type", "application/json").
-		SetHeader("Accept", "application/json").
 		SetBody(body).
 		SetResult(&Response{}).
 		Post(apipath)
@@ -511,8 +509,6 @@ func (c *APIClient) ReportNodeOnlineUsers(onlineUserList *[]api.OnlineUser) erro
 
 	res, err := c.
 		createCommonRequest().
-		SetHeader("Content-Type", "application/json").
-		SetHeader("Accept", "application/json").
 		SetBody(body).
 		SetResult(&Response{}).
 		Post(apipath)
@@ -544,8 +540,6 @@ func (c *APIClient) ReportUserTraffic(userTraffic *[]api.UserTraffic) error {
 
 	res, err := c.
 		createCommonRequest().
-		SetHeader("Content-Type", "application/json").
-		SetHeader("Accept", "application/json").
 		SetBody(body).
 		SetResult(&Response{}).
 		Post(apipath)
