@@ -123,7 +123,7 @@ func (c *APIClient) apiPath(path string) (string, error) {
 		return "/api/web/v1/" + path, nil
 		// return "api/vnet/v2" + path, nil
 	default:
-		return "", fmt.Errorf("Unsupported Node type: %s", c.NodeType)
+		return "", fmt.Errorf("unsupported Node type: %s", c.NodeType)
 	}
 }
 
@@ -214,10 +214,14 @@ func (c *APIClient) ParseSSNodeResponse(data json.RawMessage) (*api.NodeInfo, er
 	c.DeviceLimit = ssrNodeInfo.ClientLimit
 
 	// Create GeneralNodeInfo
+	port, err := strconv.Atoi(ssrNodeInfo.Port)
+	if err != nil {
+		return nil, fmt.Errorf("port convert to int  failed %s ", err.Error())
+	}
 	nodeinfo := &api.NodeInfo{
 		NodeType:          c.NodeType,
 		NodeID:            c.NodeID,
-		Port:              ssrNodeInfo.Port,
+		Port:              port,
 		SpeedLimit:        speedlimit,
 		TransportProtocol: "tcp",
 		CypherMethod:      ssrNodeInfo.Method,
@@ -291,12 +295,12 @@ func (c *APIClient) GetNodeInfo() (nodeInfo *api.NodeInfo, err error) {
 	case "Shadowsocks":
 		nodeInfo, err = c.ParseSSNodeResponse(response.Data)
 	default:
-		return nil, fmt.Errorf("Unsupported Node type: %s", c.NodeType)
+		return nil, fmt.Errorf("unsupported Node type: %s", c.NodeType)
 	}
 
 	if err != nil {
 		res, _ := json.Marshal(&response)
-		return nil, fmt.Errorf("Parse node info failed: %s", string(res))
+		return nil, fmt.Errorf("parse node info failed: %s", string(res))
 	}
 
 	return nodeInfo, nil
@@ -454,12 +458,12 @@ func (c *APIClient) GetUserList() (UserList *[]api.UserInfo, err error) {
 	case "Shadowsocks":
 		userList, err = c.ParseSSUserListResponse(response.Data)
 	default:
-		return nil, fmt.Errorf("Unsupported Node type: %s", c.NodeType)
+		return nil, fmt.Errorf("unsupported Node type: %s", c.NodeType)
 	}
 
 	if err != nil {
 		res, _ := json.Marshal(response)
-		return nil, fmt.Errorf("Parse user list failed: %s", string(res))
+		return nil, fmt.Errorf("parse user list failed: %s", string(res))
 	}
 	return userList, nil
 }
@@ -571,7 +575,7 @@ func (c *APIClient) GetNodeRule() (*[]api.DetectRule, error) {
 
 	if err != nil {
 		res, _ := json.Marshal(response)
-		return nil, fmt.Errorf("Parse user list failed: %s", string(res))
+		return nil, fmt.Errorf("parse user list failed: %s", string(res))
 	}
 	nodeRule := new(NodeRule)
 	if err := json.Unmarshal(response.Data, &nodeRule); err != nil {

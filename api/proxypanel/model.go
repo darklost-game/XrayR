@@ -55,17 +55,20 @@ type TrojanNodeInfo struct {
 // "passwd": "", // 只在单端口模式使用
 // "push_port": 8081
 type SSRNodeInfo struct {
-	ID          int    `json:"id"`
-	Method      string `json:"method"`
-	Obfs        string `json:"obfs"`
-	ObfsParam   string `json:"obfs_param"`
-	IsUDP       bool   `json:"is_udp"`
-	SpeedLimit  uint64 `json:"speed_limit"`
-	ClientLimit int    `json:"client_limit"`
-	Single      int    `json:"single"`
-	Port        int    `json:"port"`
-	Passwd      string `json:"passwd"`
-	PushPort    int    `json:"push_port"`
+	ID            int    `json:"id"`
+	Port          string `json:"port"`
+	Passwd        string `json:"passwd"`
+	Method        string `json:"method"`
+	Protocol      string `json:"protocol"`
+	Obfs          string `json:"obfs"`
+	ProtocolParam string `json:"protocol_param"`
+	ObfsParam     string `json:"obfs_param"`
+	PushPort      int    `json:"push_port"`
+	Single        int    `json:"single"`
+	Secret        string `json:"secret"`
+	SpeedLimit    uint64 `json:"speed_limit"`
+	IsUDP         int    `json:"is_udp"`
+	ClientLimit   int    `json:"client_limit"`
 }
 type V2rayUser struct {
 	UID        int    `json:"uid"`
