@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"reflect"
 	"strconv"
 	"time"
 
@@ -439,7 +438,7 @@ func (c *APIClient) GetUserList() (UserList *[]api.UserInfo, err error) {
 	res, err := c.
 		createCommonRequest().
 		SetResult(&Response{}).
-		SetQueryParam("updateTime", string(time.Now().Unix())).
+		// SetQueryParam("updateTime", string(time.Now().u)).
 		Get(apipath)
 
 	response, err := c.parseResponse(res, apipath, err)
@@ -467,19 +466,29 @@ func (c *APIClient) GetUserList() (UserList *[]api.UserInfo, err error) {
 
 // ReportNodeStatus reports the node status to the sspanel
 func (c *APIClient) ReportNodeStatus(nodeStatus *api.NodeStatus) (err error) {
-	path := fmt.Sprintf("/mod_mu/nodes/%d/info", c.NodeID)
-	systemload := SystemLoad{
-		Uptime: strconv.Itoa(nodeStatus.Uptime),
-		Load:   fmt.Sprintf("%.2f %.2f %.2f", nodeStatus.CPU/100, nodeStatus.CPU/100, nodeStatus.CPU/100),
+
+	path := fmt.Sprintf("nodeStatus/%d", c.NodeID)
+	apipath, err := c.apiPath(path)
+	if err != nil {
+		return err
 	}
 
-	res, err := c.client.R().
-		SetBody(systemload).
+	body := NodeStatus{
+		CPU: fmt.Sprintf("%.2f", nodeStatus.CPU),
+		Mem: fmt.Sprintf("%.2f", nodeStatus.Mem),
+		// Net:    fmt.Sprintf("%v↑ - %v↓", bytefmt.ByteSize(up/uint64(periodic)), bytefmt.ByteSize(down/uint64(periodic))),
+		Disk:   fmt.Sprintf("%.2f", nodeStatus.Disk),
+		Uptime: nodeStatus.Uptime,
+	}
+	res, err := c.
+		createCommonRequest().
+		SetHeader("Content-Type", "application/json").
+		SetHeader("Accept", "application/json").
+		SetBody(body).
 		SetResult(&Response{}).
-		ForceContentType("application/json").
-		Post(path)
+		Post(apipath)
 
-	_, err = c.parseResponse(res, path, err)
+	_, err = c.parseResponse(res, apipath, err)
 	if err != nil {
 		return err
 	}
@@ -490,20 +499,25 @@ func (c *APIClient) ReportNodeStatus(nodeStatus *api.NodeStatus) (err error) {
 //ReportNodeOnlineUsers reports online user ip
 func (c *APIClient) ReportNodeOnlineUsers(onlineUserList *[]api.OnlineUser) error {
 
-	data := make([]OnlineUser, len(*onlineUserList))
+	body := make([]NodeOnline, len(*onlineUserList))
 	for i, user := range *onlineUserList {
-		data[i] = OnlineUser{UID: user.UID, IP: user.IP}
+		body[i] = NodeOnline{UID: user.UID, IP: user.IP}
 	}
-	postData := &PostData{Data: data}
-	path := fmt.Sprintf("/mod_mu/users/aliveip")
-	res, err := c.client.R().
-		SetQueryParam("node_id", strconv.Itoa(c.NodeID)).
-		SetBody(postData).
-		SetResult(&Response{}).
-		ForceContentType("application/json").
-		Post(path)
+	path := fmt.Sprintf("nodeOnline/%d", c.NodeID)
+	apipath, err := c.apiPath(path)
+	if err != nil {
+		return err
+	}
 
-	_, err = c.parseResponse(res, path, err)
+	res, err := c.
+		createCommonRequest().
+		SetHeader("Content-Type", "application/json").
+		SetHeader("Accept", "application/json").
+		SetBody(body).
+		SetResult(&Response{}).
+		Post(apipath)
+
+	_, err = c.parseResponse(res, apipath, err)
 	if err != nil {
 		return err
 	}
@@ -514,22 +528,29 @@ func (c *APIClient) ReportNodeOnlineUsers(onlineUserList *[]api.OnlineUser) erro
 // ReportUserTraffic reports the user traffic
 func (c *APIClient) ReportUserTraffic(userTraffic *[]api.UserTraffic) error {
 
-	data := make([]UserTraffic, len(*userTraffic))
+	body := make([]UserTraffic, len(*userTraffic))
 	for i, traffic := range *userTraffic {
-		data[i] = UserTraffic{
+		body[i] = UserTraffic{
 			UID:      traffic.UID,
-			Upload:   traffic.Upload,
-			Download: traffic.Download}
+			Upload:   int(traffic.Upload),
+			Download: int(traffic.Download)}
 	}
-	postData := &PostData{Data: data}
-	path := "/mod_mu/users/traffic"
-	res, err := c.client.R().
-		SetQueryParam("node_id", strconv.Itoa(c.NodeID)).
-		SetBody(postData).
+
+	path := fmt.Sprintf("userTraffic/%d", c.NodeID)
+	apipath, err := c.apiPath(path)
+	if err != nil {
+		return err
+	}
+
+	res, err := c.
+		createCommonRequest().
+		SetHeader("Content-Type", "application/json").
+		SetHeader("Accept", "application/json").
+		SetBody(body).
 		SetResult(&Response{}).
-		ForceContentType("application/json").
-		Post(path)
-	_, err = c.parseResponse(res, path, err)
+		Post(apipath)
+
+	_, err = c.parseResponse(res, apipath, err)
 	if err != nil {
 		return err
 	}
@@ -539,50 +560,83 @@ func (c *APIClient) ReportUserTraffic(userTraffic *[]api.UserTraffic) error {
 
 // GetNodeRule will pull the audit rule form sspanel
 func (c *APIClient) GetNodeRule() (*[]api.DetectRule, error) {
-	path := "/mod_mu/func/detect_rules"
-	res, err := c.client.R().
+	path := fmt.Sprintf("nodeRule/%d", c.NodeID)
+	apipath, err := c.apiPath(path)
+	if err != nil {
+		return nil, err
+	}
+	res, err := c.
+		createCommonRequest().
 		SetResult(&Response{}).
-		ForceContentType("application/json").
-		Get(path)
+		Get(apipath)
 
-	response, err := c.parseResponse(res, path, err)
-
-	ruleListResponse := new([]RuleItem)
-
-	if err := json.Unmarshal(response.Data, ruleListResponse); err != nil {
-		return nil, fmt.Errorf("Unmarshal %s failed: %s", reflect.TypeOf(ruleListResponse), err)
+	response, err := c.parseResponse(res, apipath, err)
+	if err != nil {
+		return nil, err
 	}
-	ruleList := make([]api.DetectRule, len(*ruleListResponse))
-	for i, r := range *ruleListResponse {
-		ruleList[i] = api.DetectRule{
-			ID:      r.ID,
-			Pattern: r.Content,
+
+	if err != nil {
+		res, _ := json.Marshal(response)
+		return nil, fmt.Errorf("Parse user list failed: %s", string(res))
+	}
+	nodeRule := new(NodeRule)
+	if err := json.Unmarshal(response.Data, &nodeRule); err != nil {
+		return nil, fmt.Errorf("json unmarshal failed %s ", err.Error())
+	}
+	var ruleList = make([]api.DetectRule, 0)
+	// 模式
+	////第一种：mode为all时，表示节点未设置任何审计规则，全部放行
+	////第二种：mode为reject时，表示节点设置了阻断规则，凡是匹配到阻断规则的请求都要拦截
+	////第三种：mode为allow时，表示节点设置了仅放行的白名单，凡是非白名单内的全部拦截，仅放行匹配了白名单规则的
+	if nodeRule.Mode == "reject" {
+		var rules = nodeRule.Rules
+		for _, r := range rules {
+			// 审计规则类型：
+			////reg-正则表达式、
+			////domain-域名、ip-IP、
+			////protocol-应用层协议（HTTP协议、FTP协议、TELNET协议、SFTP协议、BitTorrent协议、POP3协议、IMAP协议、SMTP协议、PPTP协议、L2TP协议）
+			if r.Type == "reg" {
+				ruleList = append(ruleList, api.DetectRule{
+					ID:      r.ID,
+					Pattern: r.Pattern,
+				})
+			}
+
 		}
+
 	}
+
 	return &ruleList, nil
 }
 
 // ReportIllegal reports the user illegal behaviors
 func (c *APIClient) ReportIllegal(detectResultList *[]api.DetectResult) error {
-
-	data := make([]IllegalItem, len(*detectResultList))
-	for i, r := range *detectResultList {
-		data[i] = IllegalItem{
-			ID:  r.RuleID,
-			UID: r.UID,
-		}
-	}
-	postData := &PostData{Data: data}
-	path := "/mod_mu/users/detectlog"
-	res, err := c.client.R().
-		SetQueryParam("node_id", strconv.Itoa(c.NodeID)).
-		SetBody(postData).
-		SetResult(&Response{}).
-		ForceContentType("application/json").
-		Post(path)
-	_, err = c.parseResponse(res, path, err)
+	path := fmt.Sprintf("trigger/%d", c.NodeID)
+	apipath, err := c.apiPath(path)
 	if err != nil {
 		return err
 	}
+
+	for _, r := range *detectResultList {
+		body := IllegalReport{
+			RuleID: r.RuleID,
+			UID:    r.UID,
+			Reason: "reject",
+		}
+		res, err := c.
+			createCommonRequest().
+			SetHeader("Content-Type", "application/json").
+			SetHeader("Accept", "application/json").
+			SetBody(body).
+			SetResult(&Response{}).
+			Post(apipath)
+
+		_, err = c.parseResponse(res, apipath, err)
+		if err != nil {
+			return err
+		}
+
+	}
+
 	return nil
 }
