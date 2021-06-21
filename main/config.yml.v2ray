@@ -3,13 +3,19 @@ Log:
   AccessPath: ./access.Log
   ErrorPath: ./error.log
 DnsConfigPath: # ./dns.json Path to dns config 
+ConnetionConfig:
+  Handshake: 4 # Handshake time limit, Second
+  ConnIdle: 10 # Connection idle time limit, Second
+  UplinkOnly: 2 # Time limit when the connection downstream is closed, Second
+  DownlinkOnly: 4 # Time limit when the connection is closed after the uplink is closed, Second
+  BufferSize: 64 # The internal cache size of each connection, kB 
 Nodes:
   -
     PanelType: "Proxypanel" # Panel type: SSpanel, V2board, PMpanel, Proxypanel
     ApiConfig:
       ApiHost: "http://proxypanel.test"
-      ApiKey: "RF2HwFDUNtFSmGEP"
-      NodeID: 11
+      ApiKey: "i3UD27bxdwuqzC7k"
+      NodeID: 2
       NodeType: V2ray # Node type: V2ray, Shadowsocks, Trojan
       Timeout: 30 # Timeout for the api request
       EnableVless: false # Enable Vless for V2ray Type
@@ -25,14 +31,14 @@ Nodes:
       DNSType: AsIs # AsIs, UseIP, UseIPv4, UseIPv6, DNS strategy
       EnableProxyProtocol: false # Only works for WebSocket and TCP
       EnableFallback: false # Only support for Trojan and Vless
-      # FallBackConfigs:  # Support multiple fallbacks
-      #   -
+      FallBackConfigs:  # Support multiple fallbacks
+        -
       #     SNI: # TLS SNI(Server Name Indication), Empty for any
       #     Path: # HTTP PATH, Empty for any
       #     Dest: 80 # Required, Destination of fallback, check https://xtls.github.io/config/fallback/ for details.
-      #     ProxyProtocolVer: 0 # Send PROXY protocol version, 0 for dsable
-      # CertConfig:
-      #   CertMode: dns # Option about how to get certificate: none, file, http, dns. Choose "none" will forcedly disable the tls config.
+          ProxyProtocolVer: 0 # Send PROXY protocol version, 0 for dsable
+      CertConfig:
+        CertMode: none # Option about how to get certificate: none, file, http, dns. Choose "none" will forcedly disable the tls config.
       #   CertDomain: "node1.test.com" # Domain to cert
       #   CertFile: ./cert/node1.test.com.cert # Provided if the CertMode is file
       #   KeyFile: ./cert/node1.test.com.key
